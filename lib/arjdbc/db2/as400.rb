@@ -16,6 +16,31 @@ module ArJdbc
       end
     end
 
+    module ActiveRecord
+      module Type
+        class TypeMap
+          # NOTE: this patch adds only one line on top of the default #alias_type
+          def alias_type(key, target_key)
+            register_type(key) do |sql_type, *args|
+              metadata = sql_type[/\(.*\)/, 0]
+              # NOTE: The next line is the line that has been added. It is necessary 
+              # because DB2 on the AS/400 (perhaps DB2 in general?) reports some 
+              # data types as 'CHAR () FOR BIT DATA(n)', where `n` is an integer. 
+              # This does not conform to the SQL standard naming conventions for 
+              # data types and results in the `metadata` determined in the line 
+              # above the be '() FOR BIT DATA(n)', which in turn causes the lookup 
+              # to be for 'string () FOR BIT DATA(n)' (taking an AR-jdbc patch into 
+              # account, otherwise it would say 'binary' instead of 'string'), 
+              # leading to an infinite loop on lookups for that type. It should be 
+              # mapped onto 'string(n)', which it now is.
+              metadata = $1 if sql_type =~ /CHAR \(\) FOR BIT DATA(\(\d+\))/
+              lookup("#{target_key}#{metadata}", *args)
+            end
+          end
+        end
+      end
+    end
+
     # @private
     def self.extended(adapter); DB2.extended(adapter); end
 
