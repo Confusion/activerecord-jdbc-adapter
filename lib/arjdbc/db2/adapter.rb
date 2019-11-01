@@ -215,7 +215,7 @@ module ArJdbc
         end
       end
 
-      m.alias_type %r(for bit data)i,  'binary'
+      m.alias_type %r(for bit data)i,  'string'
       m.alias_type %r(smallint)i,      'boolean'
       m.alias_type %r(serial)i,        'int'
       m.alias_type %r(decfloat)i,      'decimal'
